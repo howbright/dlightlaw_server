@@ -1,0 +1,9 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dlight.client.ClientMapper">
+    <select id="readClient" parameterType="java.lang.String"   resultType="com.dlight.client.Client">
+		SELECT * FROM client WHERE company_name = #{companyName}
+	</select>
+	<select id="readAuthority" parameterType="java.lang.String" resultType="java.lang.Integer" >
+		SELECT authority FROM client_auth where client_id = (SELECT client_id FROM client WHERE company_name = #{companyName}) 
+	</select>
+</mapper>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <!-- Standard Meta -->
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+
+  <!-- Site Properties -->
+  <title>Login Example - Semantic</title>
+  <link rel="stylesheet" type="text/css" th:href="@{/static/css/main.css}" />
+  <link rel="stylesheet" type="text/css" th:href="@{/static/semantic/dist/semantic.min.css}" />
+  <style type="text/css">
+    body > .grid {
+      height: 100%;
+    }
+    .image {
+      margin-top: -100px;
+    }
+    .column {
+      max-width: 450px;
+    }
+  </style>
+  <script
+  src="https://code.jquery.com/jquery-3.1.1.min.js"
+  integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+  crossorigin="anonymous"></script>
+  <script>
+  $(document)
+    .ready(function() {
+      $('.ui.form')
+        .form({
+          fields: {
+            email: {
+              identifier  : 'companyname',
+              rules: [
+                {
+                  type   : 'empty',
+                  prompt : 'Please enter your Company name'
+                }
+              ]
+            },
+            password: {
+              identifier  : 'password',
+              rules: [
+                {
+                  type   : 'empty',
+                  prompt : 'Please enter your password'
+                },
+                {
+                  type   : 'length[4]',
+                  prompt : 'Your password must be at least 4 characters'
+                }
+              ]
+            }
+          }
+        }
+       /*  , {
+            inline: true,
+            on: 'blur',
+            transition: 'fade down', 
+            onSuccess: validationpassed
+        } */
+        );
+      
+      function validationpassed() {
+
+    	    // Multiple instances may have been bound to the form, only submit one.
+    	    // This is a workaround and not ideal. 
+    	    // Improvements welcomed. 
+
+    	    if (window.lock != "locked") { 
+    	        var myform = $('.ui.form');
+    	        $.ajax({
+    	            type: myform.attr('method'),
+    	            url: myform.attr('action'),
+    	            data: myform.serialize(),
+    	            success: function (data) {
+    	                //if successful at posting the form via ajax.
+    	                myformposted(data);
+    	                window.lock = "";
+    	            }
+    	        });
+    	    } 
+    	    window.lock = "locked";
+    	}
+
+    	// stop the form from submitting normally 
+    	$('.ui.form').submit(function(e){ 
+    	    //e.preventDefault(); usually use this, but below works best here.
+    	    
+    	    
+    	     var myform = $('.ui.form');
+    	        $.ajax({
+    	            method: "GET",
+    	            url: myform.attr('action'),
+    	            data: myform.serialize()
+    	          /*   success: function (html) { */
+    	                //if successful at posting the form via ajax.
+    	               // myformposted(data);
+    	            	/*  console.log(html); */
+    	                  /* swal("Check console log"); */
+    	                  /* $("#contain").load(html); */
+    	                /*    window.location.href = "static/index.html"; */
+    	              /*   window.lock = "";
+    	            } */
+    	        });
+    	    return false;
+    	});
+
+
+
+
+    	function myformposted(data) { 
+    	    // clear your form and do whatever you want here 
+    	    $('.ui.form').find("input[type=text], textarea").val("");
+    	    //$('.ui.submit.button').after("<div>Message sent. Thank you.</div>");
+    	    $('.ui.submit.button').after(data);
+    	} 
+
+      
+    });
+  </script>
+</head>
+<body>
+
+<div id="contain" class="ui middle aligned center aligned grid">
+  <div class="column">
+    <h2 class="ui teal image header">
+    <!--   <img src="assets/images/logo.png" class="image"/> -->
+      <div class="content">
+        Log-in to your account
+      </div>
+    </h2>
+    <form class="ui large form" action="test">
+      <div class="ui stacked segment">
+        <div class="field">
+          <div class="ui left icon input">
+            <i class="user icon"></i>
+            <input type="text" name="name" placeholder="Company name"/>
+          </div>
+        </div>
+        <div class="field">
+          <div class="ui left icon input">
+            <i class="lock icon"></i>
+            <input type="password" name="password" placeholder="Password"/>
+          </div>
+        </div>
+        <div class="ui fluid large teal submit button">Login</div>
+      </div>
+
+      <div class="ui error message"></div>
+
+    </form>
+
+    <div class="ui message">
+      New to us? <a href="#">Sign Up</a>
+    </div>
+  </div>
+</div>
+<script src="../static/semantic/dist/semantic.min.js" th:href="@{/static/semantic/dist/semantic.min.js}"></script>
+</body>
+
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3">
+<head>
+    <title>Demo</title>
+
+<link rel="stylesheet" type="text/css" th:href="@{/static/css/main.css}" />
+<link rel="stylesheet" type="text/css" th:href="@{/static/semantic/dist/semantic.min.css}" />
+<script
+  src="https://code.jquery.com/jquery-3.1.1.min.js"
+  integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+  crossorigin="anonymous"></script>
+<script>
+$(document)
+.ready(function() {
+	$('#logoutBtn').click(function() { 
+		
+		  $.ajax({
+			    method: 'GET',
+	            url: '/contract'
+	        });
+	});
+});
+</script>
+</head>
+<body>
+
+<div class="ui container">
+
+    <h1>Login Success!!</h1>
+	<!-- <button class="ui primary button" id="logoutBtn">Logout</button> -->
+  <form id="logoutForm" th:action="@{/contract}" method="post">
+    <input type="submit" class="ui fluid large teal submit button" value="Logout"/>
+  </form>
+</div>
+<!-- <script src="../static/vendor/jquery.min.js" th:href="@{/vendor/jquery.min.js}"></script> -->
+<script src="../static/semantic/dist/semantic.min.js" th:href="@{/static/semantic/dist/semantic.min.js}"></script>
+<!-- <script src="../partner/static/semantic/dist/semantic.min.js"></script>
+<script src="../partner/static/semantic/dist/semantic.min.js"></script> -->
+</body> 
+</html>

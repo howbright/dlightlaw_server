@@ -1,0 +1,329 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css" th:href="@{/static/css/main.css}" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+</head>
+<body>
+<script src="https://unpkg.com/vue"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<div id="app" class="container">
+<label>계약서 목록</label>
+<select v-model="selected">
+	<option disabled="disabled" value="">Please select one</option>
+	<option v-for="contract in contracts">
+		{{ contract.text }}
+	</option>
+</select>
+<button id="insertBtn" v-on:click="genContract">Go!</button>
+<!-- <button id="fileRequest" v-on:click="downloadContract" v-if="counter == conditions.length + 1">완료</button> -->
+<header class="nanumbarungothic">
+  <span class="normal w300">{{ selected }}</span>
+</header>
+<br></br>
+<div class="nanumbarungothic sub_container">
+  <p class="normal w250" v-html="user_data"></p>
+</div>
+<hr></hr>
+<div class="nanumbarungothic sub_container">
+	 <my-component v-for="(condition, idx) in conditions" v-bind:question-key="condition.questionKey" v-bind:condition-type="condition.type" v-bind:article-index="article_index"
+			 v-bind:key="condition.conId" v-bind:con-id="condition.conId" v-bind:inserted="inserted">
+	</my-component>
+	<button id="prevBtn" v-on:click="getContractPart('prev')">이전</button>
+	<button v-on:click="insertAnswers" >저장</button>
+	<button id="fileRequest" v-on:click="downloadContract" v-if="completed">계약서 생성 및 다운로드</button>
+</div> 
+
+<footer>Copyright &copy; dlightlaw.com</footer>
+
+</div>
+<script type="x-template" id="my-form">
+<div class="condition">
+	<span><i class="material-icons" style="font-size:15px"> done</i> {{title}}</span>
+	<br></br>
+	<template v-if="conditionType === 'TEXT'">
+	<input type="text" v-model="userInsertValue" placeholder="값을 입력하세요" ></input>
+</template>
+<template v-else-if="conditionType == 'DEFINITION'">
+	<textarea rows="4" cols="50"  v-model="userInsertValue" placeholder="정의를 입력하세요"></textarea>
+</template>
+<template v-else-if="conditionType == 'MULTI_SELECT'">
+	 <template v-for="item in items">
+		<input type="checkbox" v-bind:value="item" v-bind:text="item"  v-model="checkedItems"></input>
+		<label class="normal w250">{{ item }}</label>
+		<br></br>
+	</template>
+</template>
+<template v-else-if="conditionType == 'SELECT'">
+	<template v-for="item in items">
+		<input type="radio" v-bind:value="item" v-bind:text="item"  v-model="checkedItems"></input>
+		<label class="normal w250">{{ item }}</label>
+		<br></br>
+	</template>
+</template>
+<template v-else-if="conditionType === 'NUMBER'">
+	<input type="number" v-model="userInsertValue" placeholder="값을 입력하세요" ></input>
+</template>
+<template v-else-if="conditionType === 'DATE'">
+	<input type="date" v-model="userInsertValue"  ></input>
+</template>
+<template v-else-if="conditionType === 'OPTIONAL'">
+	<div>
+		<input type="checkbox"  v-model="checked" />
+		<label class="normal w250" for="checkbox">{{ checkedStr }}</label>
+	</div>
+</template>
+<template v-else="true">
+	<div><span>매롱</span>
+	</div>
+</template>
+<br></br>
+</div>
+</script>
+
+<script type="text/javascript" th:inline="javascript">
+$(document).ready(function(){
+	
+	var result = [];
+
+	Vue.component('my-component', {
+	  props: {'questionKey' : null, 
+	          'conId' : String, 
+	          'conditionType' : String,
+	          'articleIndex' : Number
+	      },
+	  template: '#my-form',
+	  methods : {
+	  	// insertAnswer : function(){
+	  	// 	if(!this.insertedFlag){
+	  	// 		//부모에게 insert 이벤트 발생 
+	  	// 		this.$emit('insert', {title : this.title, index : this.index, userInsertValue : this.userInsertValue});
+	  	// 	}
+	  	// }
+	  },
+	  data : function(){
+	  	return { userInsertValue:'',
+	  	         checkedItems:[],
+	  	         checked: true
+	  		   }
+	  },
+	  computed : {
+	  	title : function(){
+	  		if(this.conditionType == 'TEXT' || this.conditionType == 'NUMBER' || this.conditionType == 'DATE'){
+	  			return "'"+this.questionKey+"'" + '를 입력하세요';
+	  		}else if(this.conditionType == 'DEFINITION'){
+	  			return "'"+this.questionKey+"'" + '의 정의 입력하세요';
+	  		}else if(this.conditionType == 'MULTI_SELECT'){
+	  			return "다음 중 계약서에 포함할 내용을 모두 선택하세요.";
+	  		}else if(this.conditionType == 'SELECT'){
+	  			return "다음 중 계약서에 포함할 내용을 선택하세요.";
+	  		}else if(this.conditionType == 'OPTIONAL'){
+	  			return '위조항을 포함하시겠습니까?';
+	  		}
+	  	},
+	  	checkedStr : function(){
+	  		if(this.checked)
+	  			return '예, 위의 조항을 포함하겠습니다.';
+	  		else
+	  			return '아니오, 위의 조항을 포함하지 않겠습니다.';
+	  	},
+	  	items : function(){
+
+	  	    return this.questionKey.split(";");
+
+	  	}
+	  },
+	  created: function(){
+	  	var self = this;
+	  	bus.$on('insert-answers', function(){ 
+
+	  		if(self.conditionType == 'MULTI_SELECT'){
+	  			self.userInsertValue = self.checkedItems.join(";");
+	  		}else if(self.conditionType == 'SELECT'){
+	  			if(!(self.checkedItems instanceof Array)){
+	  				self.userInsertValue = self.checkedItems;
+	  			}
+	  		}else if(self.conditionType == 'OPTIONAL' ){
+	  			if(!self.checked)
+	  				self.userInsertValue = self.articleIndex;
+	  			else 
+	  				return;
+	  		}
+	  		
+	  		var resultObj = {
+	  			questionKey : self.questionKey,
+	  			type : self.conditionType,
+	  			userInsertValue : self.userInsertValue,
+	  			conId : self.conId
+	  		}
+	  		var contains = false;
+	  		for (var i = 0; i /*<![CDATA[*/</*]]>*/ result.length ; i++){
+	  			if(result[i]["conId"] == resultObj["conId"]){
+	  				contains = true;
+	  				result[i]["userInsertValue"] = resultObj["userInsertValue"];
+	  				break;
+	  			}
+	  		}
+	  		if(!contains){
+	  				result.push(resultObj);
+	  		}
+	  	})
+	  },
+	  mounted : function(){
+	  	for(var i  = result.length-1 ; i>=0 ; i--){
+	  		if(result[i]['questionKey'] == this.questionKey){
+	  			this.userInsertValue = result[i]['userInsertValue'];
+	  		} 
+	  	}
+	  }
+	})
+
+	var bus = new Vue();
+
+	new Vue({
+		el: '#app',
+		data: {
+			selected: '',
+			conditions:[],
+			contracts:[],
+			question_key : '',
+			counter : 0,
+			inserted : false,
+			user_data: '',
+			condition_type : 'TEXT',
+			part_index : 0,
+			completed : false,
+			is_optional : false,
+			article_index:0,
+			con_id : ''
+		},
+		methods:{
+			genContract : function(event){
+				var self = this;
+				self.part_index = 0;
+				self.getContractPart('prev');
+				
+			},
+			getContractPart : function(type){
+				var self = this;
+				if(!this.selected){
+					alert('계약서를 선택해주세요!');
+					return;
+				}
+				if(type == 'prev'){
+					if(self.part_index > 0){
+						self.part_index--;
+					}
+					$.ajax({
+				        url : "http://localhost:8080/contract-part",
+				        type: "get",
+				        data: {filename : self.selected +'.docx', 
+				        		paramindex : self.part_index},
+				        success : function(responseData){
+				        	if(responseData['originData']){
+				        		self.user_data = responseData['userData'];
+				        		self.is_optional = responseData['optional'];
+				        		self.conditions = responseData['conditions'];
+				        		self.article_index = responseData['articleIndex'];
+				        		if(self.is_optional){
+				        			var con = {type : 'OPTIONAL', questionKey: '', userInsertValue: self.part_index, conId : 'OPTIONAL.'+ self.part_index}
+				        			self.conditions.unshift(con);
+				        		}
+				            	
+				            	
+				            	
+				        	}
+				        	self.completed = false;
+			        	}
+		  			  });
+
+				}else if(type == 'next'){
+					self.part_index++;
+					$.ajax({
+				        url : "http://localhost:8080/contract-part",
+				        type: "get",
+				        data: {filename : self.selected +'.docx', 
+				        		paramindex : self.part_index},
+				        success : function(responseData){
+				        	if(responseData['originData']){
+				        		self.user_data = responseData['userData'];
+				        		self.is_optional = responseData['optional'];
+				        		self.conditions = responseData['conditions'];
+				        		self.article_index = responseData['articleIndex'];
+				        		if(self.is_optional){
+				        			var con = {type : 'OPTIONAL', questionKey: '', userInsertValue: self.part_index, onId : 'OPTIONAL.'+ self.part_index}
+				        			self.conditions.unshift(con);
+				        		}
+				        
+			            		self.completed = false;
+				        	}else{
+				        		self.part_index--;
+				        		self.completed = true;
+				        	}
+			        	}
+		  			  });
+				}
+			},
+			insertAnswers : function(){
+				bus.$emit('insert-answers');
+			},
+			downloadContract : function(){
+				// 서버에 데이터를 요청한다. 
+				$("#fileRequest").click(function() {
+
+					$.ajax({
+				        url : "http://localhost:8080/change-contract",
+				        type: "POST",
+					    contentType : 'application/json; charset=utf-8',
+					    dataType : 'json',
+					    data : JSON.stringify(result),
+				        success : function(responseData){
+
+				       //  	$.ajax({
+						     //    url : "http://localhost:8080/download",
+						     //    type: "get",
+						     //    data : {filename : responseData.filename}
+				  			  // });
+
+
+				        	window.location.href = 'http://localhost:8080/download?filename='+responseData.filename;
+				           
+				            // alert(responseData.title);
+				           
+				        }
+				    });
+
+
+				    // // hope the server sets Content-Disposition: attachment!
+				    
+				});
+			}
+		},
+		created: function(){
+			var self = this;
+
+	     	bus.$on('insert-answers', function(){ 
+	  	 	
+	  	 		self.getContractPart('next');
+	  	 	
+	  	 	});
+
+			var server_contracts = [];
+			$.ajax({
+		        url : "http://localhost:8080/file-list",
+		        type: "get",
+		        success : function(responseData){
+	            	self.contracts = responseData;
+	        	}
+  			  });
+			
+		},
+		computed : {
+		}
+	});
+
+	});
+</script>
+</body>
+</html>

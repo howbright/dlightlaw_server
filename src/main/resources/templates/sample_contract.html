@@ -1,0 +1,166 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<title>Spring Boot Thymeleaf Hello World Example</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css" th:href="@{/static/css/main.css}" />
+<link rel="stylesheet" type="text/css" th:href="@{/static/semantic/dist/semantic.min.css}" />
+</head>
+<body>
+<script src="https://unpkg.com/vue"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<div id="app">
+		<label>계약서 목록</label>
+		<select v-model="selected">
+			<option disabled="disabled" value="">Please select one</option>
+			<option v-for="contract in contracts">
+				{{ contract.text }}
+			</option>
+		</select>
+		<br></br>
+		<span>Selected: {{ selected }}</span>
+		<br></br>
+		<button id="insertBtn" v-on:click="genContract">계약서 작성 Go!
+		</button>
+		<my-component v-for="(condition, idx) in conditions" v-bind:title="condition.title" 
+			v-if="idx &lt; counter" v-on:insert="onInsert" v-bind:key="condition.index"  v-bind:index="condition.index" v-bind:inserted="inserted">
+		</my-component>
+		<button id="fileRequest" v-on:click="downloadContract" v-if="counter == conditions.length + 1">완료</button>
+	</div>
+	
+	
+<script type="x-template" id="my-form">
+ <div><span>{{title}}</span>
+<br></br>
+<input type="text" v-model="message" placeholder="값을 입력하세요" v-bind:disabled="inserted_flag"></input>
+<button v-on:click="insertAnswer"  v-bind:disabled="inserted_flag" >입력</button>
+</div>
+</script>
+<script type="text/javascript" th:inline="javascript">
+$(document).ready(function(){
+	
+	var resultValue = [];
+
+	Vue.component('my-component', {
+	  props: ['title', 'index', 'inserted'],
+	  template: '#my-form',
+	  methods : {
+	  	insertAnswer : function(){
+	  		if(!this.inserted_flag){
+	  			//부모에게 insert 이벤트 발생 
+	  			this.$emit('insert', {title : this.title, index : this.index, message : this.message});
+	  		}
+	  	}
+	  },
+	  data : function(){
+	  	return {message:'', inserted_flag : this.inserted}
+	  }
+	})
+
+
+	new Vue({
+		el: '#app',
+		data: {
+			selected: '',
+			contracts:[],
+			conditions:[],
+			counter : 0,
+			inserted : false
+		},
+		methods:{
+			genContract : function(event){
+				var self = this;
+				if(this.selected){
+					if(this.counter === 0){
+						//서버에서 데이터 받아와야 하는 부분이다. 
+						// var server_conditions = [
+						// 	{title : "1. 양도인", index:0},
+						// 	{title : "2. 양수인", index:1},
+						// 	{title : "3. 양도인 주소", index:2},
+						// 	{title : "4. 양수인 주소", index:3},
+						// 	{title : "5. 양도인 대표이사", index:4},
+						// 	{title : "6. 양수인 대표이사", index:5}];
+						
+						$.ajax({
+					        url : "http://localhost:8080/read-contract",
+					        type: "get",
+					        data: {filename : this.selected},
+					        success : function(responseData){
+				            	self.conditions = responseData;
+				            	self.counter += 1;
+				        	}
+			  			  });
+						
+						
+					}
+				}else{
+					alert('계약서를 선택해주세요!');
+				}
+			},
+			onInsert : function(value){
+				this.inserted = true;
+				
+					resultValue.push(value)
+					if(this.counter /*<![CDATA[*/<=/*]]>*/ this.conditions.length)
+						this.counter += 1;
+					this.inserted = false;
+				
+			},
+			downloadContract : function(){
+				// 서버에 데이터를 요청한다. 
+				$("#fileRequest").click(function() {
+
+					$.ajax({
+				        url : "http://localhost:8080/change-contract",
+				        type: "POST",
+					    contentType : 'application/json; charset=utf-8',
+					    dataType : 'json',
+					    data : JSON.stringify(resultValue),
+				        success : function(responseData){
+
+				       //  	$.ajax({
+						     //    url : "http://localhost:8080/download",
+						     //    type: "get",
+						     //    data : {filename : responseData.filename}
+				  			  // });
+
+
+				        	window.location.href = 'http://localhost:8080/download?filename='+responseData.filename;
+				           
+				            // alert(responseData.title);
+				           
+				        }
+				    });
+
+
+				    // // hope the server sets Content-Disposition: attachment!
+				    
+				});
+			}
+		},
+		created: function(){
+			//서버에서 데이터 받아와야 하는 부분이다. 
+			// var server_contracts = [
+			// 	{text : '계약서 A', value : 'A'},
+			// 	{text : '계약서 B', value : 'B'},
+			// 	{text : '계약서 C', value : 'C'}
+			// ];
+			var self = this;
+			var server_contracts = [];
+			$.ajax({
+		        url : "http://localhost:8080/file-list",
+		        type: "get",
+		        success : function(responseData){
+	            	self.contracts = responseData;
+	        	}
+  			  });
+			
+		},
+		computed : {
+		}
+	});
+
+	});
+</script>
+</body>
+</html>
